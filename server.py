@@ -19,8 +19,10 @@ app.add_middleware(
 cache_dir = "/tmp/ultralytics"
 os.makedirs(cache_dir, exist_ok=True)
 
-model_path = os.path.join(os.getcwd(), "best.pt")  # points to current working directory
-model = YOLO(model_path)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(CURRENT_DIR, "best.pt")
+
+model = YOLO(MODEL_PATH)
 
 @app.get("/")
 def home():
