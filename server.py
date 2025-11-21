@@ -20,7 +20,12 @@ cache_dir = "/tmp/ultralytics"
 os.makedirs(cache_dir, exist_ok=True)
 
 # Load YOLO model using the writable cache directory
-model = YOLO("best.pt", cache_dir=cache_dir)
+from ultralytics.utils.files import WorkingDirectory
+
+os.makedirs("/tmp/ultralytics", exist_ok=True)
+with WorkingDirectory("/tmp/ultralytics"):
+    model = YOLO("best.pt")
+
 
 @app.get("/")
 def home():
