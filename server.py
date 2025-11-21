@@ -15,27 +15,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Make a writable cache directory
-cache_dir = "/tmp/ultralytics"
-os.makedirs(cache_dir, exist_ok=True)
-
+# Path to your YOLO model
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(CURRENT_DIR, "best.pt")
 
+# Load YOLO model
 model = YOLO(MODEL_PATH)
 
 @app.get("/")
 def home():
     return {"message": "YOLO API is running"}
 
+# Main detection endpoint
 @app.post("/detect")
 async def detect(image: UploadFile = File(...)):
-    # Read uploaded image
     contents = await image.read()
     np_image = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(np_image, cv2.IMREAD_COLOR)
 
-    # Run YOLO prediction
     results = model(img)[0]
 
     detections = []
@@ -52,3 +49,8 @@ async def detect(image: UploadFile = File(...)):
         })
 
     return {"detections": detections}
+
+# Alias endpoint for existing APKs using /predict
+@app.post("/predict")
+async def predict(image: UploadFile = File(...)):
+    return await detect(image)
