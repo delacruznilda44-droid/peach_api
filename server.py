@@ -1,13 +1,13 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
-import uvicorn
 import numpy as np
 import cv2
+import os
 
 app = FastAPI()
 
-# Allow Flutter to access API
+# Allow all origins (for Flutter app)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,19 +15,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load YOLO model
-model = YOLO("best.pt")   # replace with your model path
+# Make a writable cache directory
+cache_dir = "/tmp/ultralytics"
+os.makedirs(cache_dir, exist_ok=True)
 
-# POST endpoint for detection
+# Load YOLO model using the writable cache directory
+model = YOLO("best.pt", cache_dir=cache_dir)
+
+@app.get("/")
+def home():
+    return {"message": "YOLO API is running"}
+
 @app.post("/detect")
 async def detect(image: UploadFile = File(...)):
+    # Read uploaded image
     contents = await image.read()
     np_image = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(np_image, cv2.IMREAD_COLOR)
 
+    # Run YOLO prediction
     results = model(img)[0]
-    detections = []
 
+    detections = []
     for box in results.boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         cls = int(box.cls)
@@ -41,11 +50,3 @@ async def detect(image: UploadFile = File(...)):
         })
 
     return {"detections": detections}
-
-# ✅ GET endpoint for testing connectivity
-@app.get("/")
-def home():
-    return {"message": "YOLO Detection API is running"}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
